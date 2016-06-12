@@ -15,6 +15,10 @@ type BaseJSONRouter struct {
 	JSON map[string]interface{}
 }
 
+func (r *BaseJSONRouter) ReturnJSON() {
+	r.ServeJson(r.JSON)
+}
+
 func (r *BaseJSONRouter) Before() {
 	r.JSON = make(map[string]interface{})
 }
