@@ -26,6 +26,11 @@ func (r *LoginRouter) Get() {
 }
 
 func (r *LoginRouter) Post() {
+	if r.IsLogin() {
+		r.Redirect("/")
+		return
+	}
+
 	r.Req().ParseForm()
 
 	if !r.Verify() {
@@ -53,7 +58,7 @@ func (r *LoginRouter) Post() {
 
 }
 
-func (r *LoginRouter) CheckToken() bool {
+func (r *LoginRouter) IsLogin() bool {
 	return "admin" == r.Token()
 }
 
