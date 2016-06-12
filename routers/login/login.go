@@ -19,6 +19,10 @@ type LoginRouter struct {
 type J map[string]interface{}
 
 func (r *LoginRouter) Get() {
+	if r.IsLogin() {
+		r.Redirect("/")
+		return
+	}
 	r.Render("login.html", renders.T{
 		"xsrfHTML": r.XsrfFormHtml(),
 		"captcha":  r.CreateHtml(),
@@ -26,10 +30,6 @@ func (r *LoginRouter) Get() {
 }
 
 func (r *LoginRouter) Post() {
-	if r.IsLogin() {
-		r.Redirect("/")
-		return
-	}
 
 	r.Req().ParseForm()
 
@@ -64,4 +64,21 @@ func (r *LoginRouter) IsLogin() bool {
 
 func (r *LoginRouter) AskAuth() bool {
 	return false
+}
+
+type LogoutRouter struct {
+	base.BaseRouter
+	auth.Auther
+}
+
+func (r *LogoutRouter) Get() {
+	if r.IsLogin() {
+		r.Logout()
+	}
+	r.Redirect("/login")
+
+}
+
+func (r *LogoutRouter) IsLogin() bool {
+	return "admin" == r.Token()
 }

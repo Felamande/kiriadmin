@@ -26,6 +26,11 @@ func (a *Auther) Token() string {
 	return a.token
 }
 
+func (a *Auther) Logout() {
+	a.s.Del(adminTokenKey)
+	a.s.Release()
+}
+
 func (a *Auther) AskAuth() bool {
 	return true
 }

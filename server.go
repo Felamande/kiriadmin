@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/Felamande/kiriadmin/settings"
-	"github.com/Felamande/lotdb/routers/toolate"
 	"github.com/lunny/tango"
 
+	//models
 	"github.com/Felamande/kiriadmin/models"
 
 	//modules
@@ -86,7 +86,7 @@ func main() {
 
 	t.Get("/", new(home.HomeRouter))
 	t.Any("/login", new(login.LoginRouter))
-	t.Post(toolate.Url, new(toolate.TooLateRouter))
+	t.Get("/logout", new(login.LogoutRouter))
 
 	if settings.Debug.Enable {
 		go debug.On(settings.Debug.Port)
