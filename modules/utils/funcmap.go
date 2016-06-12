@@ -14,7 +14,7 @@ func AssetLocal(typ, src string) template.HTML {
 }
 
 func AssetRemote(typ, src string) template.HTML {
-	return template.HTML(fmt.Sprintf(`<link rel="stylesheet" href="%s" type="text/css" />`, "https://"+path.Join(settings.Static.RemoteRoot, "css", src)))
+	return template.HTML(fmt.Sprintf(`<link rel="stylesheet" href="%s" type="text/css" />`, "https://"+path.Join(settings.Static.RemoteRoot, typ, src)))
 }
 
 func DefaultFuncs() template.FuncMap {
