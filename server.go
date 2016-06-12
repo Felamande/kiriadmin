@@ -28,6 +28,7 @@ import (
 
 	//routers
 	"github.com/Felamande/kiriadmin/routers/debug"
+	"github.com/Felamande/kiriadmin/routers/editor"
 	"github.com/Felamande/kiriadmin/routers/home"
 	"github.com/Felamande/kiriadmin/routers/login"
 )
@@ -52,6 +53,7 @@ func main() {
 	})
 
 	t.Use(
+		tango.Static(),
 		new(timemw.TimeHandler),
 		binding.Bind(),
 		tango.Recovery(false),
@@ -87,6 +89,9 @@ func main() {
 	t.Get("/", new(home.HomeRouter))
 	t.Any("/login", new(login.LoginRouter))
 	t.Get("/logout", new(login.LogoutRouter))
+	t.Group("/editor", func(g *tango.Group) {
+		g.Post("/eval", new(editor.EvalMdRouter))
+	})
 
 	if settings.Debug.Enable {
 		go debug.On(settings.Debug.Port)
