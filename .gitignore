@@ -1,0 +1,8 @@
+god.toml
+.vscode
+*.exe
+settings.toml
+settings_.toml
+tls
+kiriadmin
+settings.js

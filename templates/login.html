@@ -1,0 +1,23 @@
+{%template "base/head.html" . %}
+
+<body>
+
+	<form action="/login" method="POST">
+		{%.xsrfHTML%}
+		{%.captcha%}
+		<br />
+		<label for="name" >验证码</label>
+		<input type="text" id="captcha" name="captcha">
+		<br />
+		<label for="name" >账号</label>
+		<input type="text" id="name" name="name">
+		<br />
+		<label for="pwd" >密码</label> 
+		<input type="password" id="pwd" name="pwd">
+		<br />
+		<button type="submit" >登陆</button>
+	</form>
+
+</body>
+
+{%template  "base/foot.html" .%}
