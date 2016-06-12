@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/Felamande/kiriadmin/modules/utils"
 	"github.com/Felamande/kiriadmin/settings"
 )
@@ -38,7 +36,6 @@ func (u *User) Auth(pwd string) bool {
 }
 
 func AuthUser(u *User, pwd string) bool {
-	fmt.Println(utils.Encrypt["sha256"](u.Rnd + pwd))
 	return u.Enc == utils.Encrypt["sha256"](u.Rnd+pwd)
 }
 
