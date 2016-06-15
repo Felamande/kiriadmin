@@ -18,13 +18,15 @@ import (
 	"github.com/Felamande/kiriadmin/middlewares/auth"
 	"github.com/Felamande/kiriadmin/middlewares/header"
 	timemw "github.com/Felamande/kiriadmin/middlewares/time"
+	"github.com/Felamande/kiriadmin/middlewares/xsrf"
 	"github.com/tango-contrib/binding"
 	"github.com/tango-contrib/cache"
 	"github.com/tango-contrib/captcha"
 	"github.com/tango-contrib/events"
 	"github.com/tango-contrib/renders"
 	"github.com/tango-contrib/session"
-	"github.com/tango-contrib/xsrf"
+
+	_ "github.com/tango-contrib/cache-nodb"
 
 	//routers
 	"github.com/Felamande/kiriadmin/routers/debug"
@@ -48,19 +50,20 @@ func main() {
 	})
 
 	CaptchaCache := cache.New(cache.Options{
-		Adapter:  "memory",
-		Interval: 120,
+		Adapter:       "nodb",
+		Interval:      120,
+		AdapterConfig: "./resource/capctcha_cache",
 	})
 
 	t.Use(
-		tango.Static(),
 		new(timemw.TimeHandler),
-		binding.Bind(),
+		tango.Static(),
 		tango.Recovery(false),
-		tango.Compresses([]string{}),
 		tango.Return(),
 		tango.Param(),
 		tango.Contexts(),
+		binding.Bind(),
+		events.Events(),
 		renders.New(renders.Options{
 			Reload:      settings.Template.Reload,
 			Directory:   settings.Template.Home,
@@ -69,8 +72,6 @@ func main() {
 			DelimsRight: settings.Template.DelimesRight,
 			Funcs:       utils.DefaultFuncs(),
 		}),
-		events.Events(),
-		header.CustomHeaders(),
 		captcha.New(captcha.Options{
 			URLPrefix:        "/captcha/",  // URL prefix of getting captcha pictures.
 			FieldIdName:      "captcha_id", // Hidden input element ID.
@@ -83,14 +84,17 @@ func main() {
 			Caches:           CaptchaCache,
 		}),
 		auth.Auth("/login", sess),
-		xsrf.New(time.Minute),
+		// xsrf.New(time.Minute),
+		xsrf.New(),
+		header.CustomHeaders(),
 	)
 
 	t.Get("/", new(home.HomeRouter))
 	t.Any("/login", new(login.LoginRouter))
 	t.Get("/logout", new(login.LogoutRouter))
 	t.Group("/editor", func(g *tango.Group) {
-		g.Post("/eval", new(editor.EvalMdRouter))
+		g.Get("/", new(editor.EditorHome))
+		g.Post("/preview", new(editor.PreviewRouter))
 	})
 
 	if settings.Debug.Enable {
