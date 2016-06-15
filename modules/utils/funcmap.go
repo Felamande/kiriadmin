@@ -4,17 +4,25 @@ import (
 	"fmt"
 	"html/template"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/Felamande/kiriadmin/settings"
 )
 
+var AssetTpl = map[string]string{
+	"css": `<link rel="stylesheet" href="%s" type="text/css" />`,
+	"js":  `<script src="%s"></script>`,
+}
+
 func AssetLocal(typ, src string) template.HTML {
-	return template.HTML(fmt.Sprintf(`<script src="%s"></script>`, path.Join(settings.Static.VirtualRoot, typ, src)))
+
+	return template.HTML(fmt.Sprintf(AssetTpl[typ], path.Join(settings.Static.VirtualRoot, typ, src)))
 	// return path.Join(settings.Static.VirtualRoot, "js", src)
 }
 
 func AssetRemote(typ, src string) template.HTML {
-	return template.HTML(fmt.Sprintf(`<link rel="stylesheet" href="%s" type="text/css" />`, "https://"+path.Join(settings.Static.RemoteRoot, typ, src)))
+	return template.HTML(fmt.Sprintf(AssetTpl[typ], "https://"+path.Join(settings.Static.RemoteRoot, typ, src)))
 }
 
 func DefaultFuncs() template.FuncMap {
@@ -29,4 +37,9 @@ func DefaultFuncs() template.FuncMap {
 		// "CompressCss": s.Css.CompressCss,
 		// "CompressJs":  s.Js.CompressJs,
 	}
+}
+
+func Ext(filename string) string {
+	clean := strings.Split(filename, "?")[0]
+	return filepath.Ext(clean)
 }
