@@ -82,3 +82,18 @@ var Encrypt = map[string]func(string) string{
 		return fmt.Sprintf("%x", t.Sum(nil))
 	},
 }
+
+type RndGenerator interface {
+	GenerateRnd() string
+}
+
+type ShaGenerator struct {
+	Type string
+}
+
+func (g *ShaGenerator) GenerateRnd() string {
+	if genFunc, ok := Encrypt[g.Type]; ok {
+		return genFunc(RandomString(25))
+	}
+	return Encrypt["sha1"](RandomString(25))
+}
