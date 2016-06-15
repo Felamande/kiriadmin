@@ -1,0 +1,14 @@
+.md-editor-body{
+    height: 600px;
+    background-color: red;
+}
+.md-preview {
+  text-align: left;
+  color: #fff;
+  overflow-y: scroll;
+  /*background-color: #20b907;*/
+  /*margin-top: 0px;*/
+  margin-bottom: 8px;
+  border-radius: 4px;
+  -webkit-background-clip: padding-box;
+}
