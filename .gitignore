@@ -7,3 +7,5 @@ tls
 kiriadmin
 settings.js
 dm
+debug
+resource/**
