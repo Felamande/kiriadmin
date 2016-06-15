@@ -5,9 +5,14 @@ import (
 )
 
 type Markdown struct {
-	Content string `form:"content"`
+	FileName string   `json:"file_name"`
+	Title    string   `json:"title"`
+	Mtime    string   `json:"mtime"`
+	Tags     []string `json:"tags"`
+	Content  string   `json:"content"`
+	Xsrf     string   `json:"_xsrf"`
 }
 
-func (md Markdown) Eval() []byte {
+func (md Markdown) Convert() []byte {
 	return blackfriday.MarkdownCommon([]byte(md.Content))
 }
