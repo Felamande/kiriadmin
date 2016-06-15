@@ -7,5 +7,5 @@ import (
 )
 
 func On(port int) {
-	http.ListenAndServe(":"+strconv.Itoa(port), nil)
+	http.ListenAndServe("127.0.0.1:"+strconv.Itoa(port), nil)
 }
