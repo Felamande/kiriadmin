@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>{% .title %}</title>
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <!--<link rel="stylesheet" href="https://kirigiri.me/bundle/index.css">-->
+    {% AssetRemote "js" "vue.js" %}
+    {% AssetRemote "js" "vue-resource.js" %}
+    {% AssetRemote "js" "vux.js"%}
+    {% AssetRemote "js" "vux-components/x-textarea/index.js"%}
+    {% AssetRemote "js" "vux-components/group/index.js"%}
+    {% AssetRemote "js" "vux-components/cell/index.js"%}
+    {% AssetRemote "js" "vux-components/flexbox/index.js"%}
+    {% AssetRemote "js" "vux-components/flexbox-item/index.js"%}
+    {% AssetRemote "js" "vux-components/x-button/index.js"%}
+    {% AssetLocal  "css"  "editor.css"%}
+    {% AssetRemote "css"  "vux.css"%}
+    {% AssetLocal  "js"  "editor.js"%}
+    {% AssetLocal  "css"  "md-preview.css"%}
+</head>
+
+<body>
+    {% .xsrf %}
+    <div class="container" id="md-editor-body">
+        <flexbox orient="horizontal" :margin-left=0 :height="400" class="vux-1px-tb vux-1px-l vux-1px-r">
+            <flexbox-item>
+                <group title="textarea">
+                    <x-textarea @keyup.113="postPreview" :height="400" :value.sync="mdSrc" placeholder="请输入详细描述"></x-textarea>
+                </group>
+            </flexbox-item>
+            
+            <flexbox-item  class="content md-preview vux-1px-r" id="md-preview" style="height:400px">
+            </flexbox-item>
+        </flexbox>
+        <x-button type="primary" @click="postPreview">预览</x-button>
+    </div>
+</body>
+{%template "base/foot.html" .%}
