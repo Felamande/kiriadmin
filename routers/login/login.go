@@ -6,13 +6,12 @@ import (
 	"github.com/Felamande/kiriadmin/routers/base"
 	"github.com/tango-contrib/captcha"
 	"github.com/tango-contrib/renders"
-	"github.com/tango-contrib/xsrf"
+	// "github.com/tango-contrib/xsrf"
 )
 
 type LoginRouter struct {
 	base.BaseTplRouter
 	captcha.Captcha
-	xsrf.Checker
 	auth.Auther
 }
 
@@ -24,8 +23,8 @@ func (r *LoginRouter) Get() {
 		return
 	}
 	r.Render("login.html", renders.T{
-		"xsrfHTML": r.XsrfFormHtml(),
-		"captcha":  r.CreateHtml(),
+		"captcha": r.CreateHtml(),
+		"title":   "登陆后台",
 	})
 }
 
