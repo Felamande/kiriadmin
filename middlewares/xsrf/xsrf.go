@@ -3,7 +3,6 @@ package xsrf
 import (
 	"fmt"
 	"html/template"
-	"time"
 
 	"github.com/Felamande/kiriadmin/modules/utils"
 	"github.com/lunny/tango"
@@ -12,27 +11,23 @@ import (
 
 //default values
 const (
-	CacheAdapter                  = "memory"
-	Expiration      time.Duration = time.Minute * 30
-	CacheGCInterval               = 120
-	TokenKey                      = "_xsrf"
-	RndGnrtorType                 = "sha1"
-	DisposableKey                 = "once"
+	CacheAdapter          = "memory"
+	Expiration      int64 = 60 * 30
+	CacheGCInterval       = 120
+	TokenKey              = "_xsrf"
+	RndGnrtorType         = "sha1"
+	DisposableKey         = "once"
 )
 
 type Option struct {
-	CacheAdapter    string
-	RndGenerator    utils.RndGenerator
-	Expiration      time.Duration
-	CacheGCInterval int
-	TokenKey        string
-	RndGnrtorType   string
+	Cache        *cache.Caches
+	RndGenerator utils.RndGenerator
+	Expiration   int64 //seconds
+	TokenKey     string
 }
 
 type XsrfHandler struct {
 	Option
-	cache        *cache.Caches
-	rndGenerator utils.RndGenerator
 }
 
 func (x *XsrfHandler) Handle(ctx *tango.Context) {
@@ -71,28 +66,23 @@ func New(opts ...Option) *XsrfHandler {
 	if len(opts) == 0 {
 		return &XsrfHandler{
 			Option: Option{
-				CacheAdapter:  CacheAdapter,
-				Expiration:    Expiration,
-				TokenKey:      TokenKey,
-				RndGnrtorType: RndGnrtorType,
+				Cache:        cache.New(cache.Options{Adapter: "memory"}),
+				Expiration:   Expiration,
+				TokenKey:     TokenKey,
+				RndGenerator: &utils.ShaGenerator{Type: RndGnrtorType},
 			},
-			rndGenerator: &utils.ShaGenerator{Type: RndGnrtorType},
-			cache:        cache.New(cache.Options{Adapter: CacheAdapter, Interval: CacheGCInterval}),
 		}
 	}
 
 	opt := opts[0]
-	if opt.CacheAdapter == "" {
-		opt.CacheAdapter = CacheAdapter
+	if opt.Cache == nil {
+		opt.Cache = cache.New(cache.Options{Adapter: "memory"})
 		// opt.cache =
-	}
-	if opt.CacheGCInterval == 0 {
-		opt.CacheGCInterval = CacheGCInterval
 	}
 	if opt.Expiration == 0 {
 		opt.Expiration = Expiration
 	}
-	if opt.RndGnrtorType == "" {
+	if opt.RndGenerator == nil {
 		opt.RndGenerator = &utils.ShaGenerator{Type: RndGnrtorType}
 	}
 	if opt.TokenKey == "" {
@@ -100,9 +90,7 @@ func New(opts ...Option) *XsrfHandler {
 	}
 
 	return &XsrfHandler{
-		Option:       opt,
-		cache:        cache.New(cache.Options{Adapter: opt.CacheAdapter, Interval: opt.CacheGCInterval}),
-		rndGenerator: &utils.ShaGenerator{opt.RndGnrtorType},
+		Option: opt,
 	}
 }
 
@@ -148,11 +136,12 @@ func (c *Checker) DisposableToken() bool {
 }
 
 func (c *Checker) HandleDisposable(token string) {
-	c.xh.cache.Delete(token)
+	c.xh.Cache.Delete(token)
+
 }
 
 func (c *Checker) GenerateXsrfToken() string {
-	return c.xh.rndGenerator.GenerateRnd()
+	return c.xh.RndGenerator.GenerateRnd()
 }
 
 func (c *Checker) ValidateXsrf(token string) error {
@@ -160,7 +149,7 @@ func (c *Checker) ValidateXsrf(token string) error {
 		return XsrfError("empty token")
 
 	}
-	trueV := c.xh.cache.Get(token)
+	trueV := c.xh.Cache.Get(token)
 	if trueV == nil {
 		return XsrfError("invalid token or expired")
 	}
@@ -170,15 +159,15 @@ func (c *Checker) ValidateXsrf(token string) error {
 
 func (c *Checker) PutToken(token string) error {
 	c.token = token
-	return c.xh.cache.Put(token, true, int64(c.xh.Expiration))
+	return c.xh.Cache.Put(token, true, int64(c.xh.Expiration))
 }
 
 func (c *Checker) Renew(token string) error {
-	trueV := c.xh.cache.Get(token)
+	trueV := c.xh.Cache.Get(token)
 	if trueV != nil {
 		return nil
 	}
-	return c.xh.cache.Put(token, true, int64(c.xh.Expiration))
+	return c.xh.Cache.Put(token, true, int64(c.xh.Expiration))
 
 }
 

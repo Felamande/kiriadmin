@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/Maxgis/tree"
 	"github.com/kardianos/osext"
 )
 
 type staticCfg struct {
-	RemoteRoot  string `toml:"remote"`
-	VirtualRoot string `toml:"vstatic"`
-	LocalRoot   string `toml:"lstatic"`
-	CompressDef string `toml:"compress"`
+	RemoteDomain string `toml:"remote"`
+	URLPrefix    string `toml:"urlprefix"`
+	LocalRoot    string `toml:"local_root"`
+	ListDir      bool   `toml:"listdir"`
 }
 
 type serverCfg struct {
@@ -46,8 +47,7 @@ type logCfg struct {
 }
 
 type timeCfg struct {
-	ZoneString string         `toml:"zone"`
-	Location   *time.Location `toml:"-"`
+	ZoneString string `toml:"zone"`
 }
 
 type tlsCfg struct {
@@ -61,6 +61,37 @@ type debugCfg struct {
 	Enable bool `toml:"enable"`
 }
 
+type captchaCfg struct {
+	URLPrefix     string `toml:"urlprefix"`
+	ChallengeNums int    `toml:"challenge_nums"`
+	Width         int    `toml:"width"`
+	Height        int    `toml:"height"`
+
+	//expiration in seconds
+	Expiration int64 `toml:"expiration"`
+	Cache      struct {
+		Adapter    string `toml:"adapter"`
+		Config     string `toml:"config"`
+		GCInterval int    `toml:"gc_interval"`
+	} `toml:"cache"`
+}
+
+type xsrfCfg struct {
+	RndGenerator string `toml:"rnd_generator"`
+	//expiration in seconds
+	Expiration int64 `toml:"expiration"`
+	Cache      struct {
+		Adapter    string `toml:"adapter"`
+		Config     string `toml:"config"`
+		GCInterval int    `toml:"gc_interval"`
+	} `toml:"cache"`
+}
+
+type sessionCfg struct {
+	//max age in hour
+	MaxAge int64 `toml:"max_age"`
+}
+
 type setting struct {
 	Static      staticCfg         `toml:"static"`
 	Server      serverCfg         `toml:"server"`
@@ -72,8 +103,10 @@ type setting struct {
 	TLS         tlsCfg            `toml:"tls"`
 	Debug       debugCfg          `toml:"debug"`
 	Headers     map[string]string `toml:"headers"`
-	Params      map[string]string `toml:"-"`
-	Routes      map[string]string `toml:"routes"`
+	Captcha     captchaCfg        `toml:"captcha"`
+	XSRF        xsrfCfg           `toml:"xsrf"`
+	Session     sessionCfg        `toml:"session"`
+	Params      map[string]string `toml:"params"`
 }
 
 var (
@@ -90,6 +123,11 @@ var (
 	TLS         tlsCfg
 	Time        timeCfg
 	Debug       debugCfg
+	Captcha     captchaCfg
+	XSRF        xsrfCfg
+	Location    *time.Location
+	Session     sessionCfg
+	Params      map[string]string
 	Headers     map[string]string
 )
 
@@ -114,10 +152,10 @@ func Init(cfgFile string) {
 		if err := toml.Unmarshal(b, &settingStruct); err != nil {
 			panic(err)
 		}
-		settingStruct.Time.Location, err = time.LoadLocation(settingStruct.Time.ZoneString)
+		Location, err = time.LoadLocation(settingStruct.Time.ZoneString)
 		if err != nil {
 			fmt.Println(err)
-			settingStruct.Time.Location = time.UTC
+			Location = time.UTC
 		}
 
 		Static = settingStruct.Static
@@ -131,6 +169,15 @@ func Init(cfgFile string) {
 		Headers = settingStruct.Headers
 		Debug = settingStruct.Debug
 		TLS = settingStruct.TLS
+		Params = settingStruct.Params
+		Captcha = settingStruct.Captcha
+		XSRF = settingStruct.XSRF
+		Session = settingStruct.Session
+
+		if settingStruct.Debug.Enable {
+			tree.Print(settingStruct)
+		}
+
 	})
 
 }

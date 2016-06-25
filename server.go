@@ -21,12 +21,11 @@ import (
 	"github.com/Felamande/kiriadmin/middlewares/xsrf"
 	"github.com/tango-contrib/binding"
 	"github.com/tango-contrib/cache"
+	_ "github.com/tango-contrib/cache-nodb"
 	"github.com/tango-contrib/captcha"
 	"github.com/tango-contrib/events"
 	"github.com/tango-contrib/renders"
 	"github.com/tango-contrib/session"
-
-	_ "github.com/tango-contrib/cache-nodb"
 
 	//routers
 	"github.com/Felamande/kiriadmin/routers/debug"
@@ -42,28 +41,39 @@ func init() {
 
 func main() {
 	l := log.New(os.Stdout, settings.Log.Prefix, log.Llevel|log.LstdFlags)
-	l.SetLocation(settings.Time.Location)
-	t := tango.NewWithLog(l)
+	l.SetLocation(settings.Location)
+	tgo := tango.NewWithLog(l)
 
 	sess := session.New(session.Options{
-		MaxAge: time.Hour * 24,
+		MaxAge: time.Duration(settings.Session.MaxAge * int64(time.Hour)),
 	})
 
 	CaptchaCache := cache.New(cache.Options{
-		Adapter:       "nodb",
-		Interval:      120,
-		AdapterConfig: "./resource/capctcha_cache",
+		Adapter:       settings.Captcha.Cache.Adapter,
+		Interval:      settings.Captcha.Cache.GCInterval,
+		AdapterConfig: settings.Captcha.Cache.Config,
 	})
 
-	t.Use(
+	XSRFCache := cache.New(cache.Options{
+		Adapter:       settings.XSRF.Cache.Adapter,
+		Interval:      settings.XSRF.Cache.GCInterval,
+		AdapterConfig: settings.XSRF.Cache.Config,
+	})
+
+	tgo.Use(
 		new(timemw.TimeHandler),
-		tango.Static(),
+		tango.Static(tango.StaticOptions{
+			RootPath: settings.Static.LocalRoot,
+			Prefix:   settings.Static.URLPrefix,
+			ListDir:  settings.Static.ListDir,
+		}),
 		tango.Recovery(false),
 		tango.Return(),
 		tango.Param(),
 		tango.Contexts(),
 		binding.Bind(),
 		events.Events(),
+
 		renders.New(renders.Options{
 			Reload:      settings.Template.Reload,
 			Directory:   settings.Template.Home,
@@ -73,26 +83,30 @@ func main() {
 			Funcs:       utils.DefaultFuncs(),
 		}),
 		captcha.New(captcha.Options{
-			URLPrefix:        "/captcha/",  // URL prefix of getting captcha pictures.
-			FieldIdName:      "captcha_id", // Hidden input element ID.
-			FieldCaptchaName: "captcha",    // User input value element name in request form.
-			ChallengeNums:    6,            // Challenge number.
-			Width:            240,          // Captcha image width.
-			Height:           80,           // Captcha image height.
-			Expiration:       600,          // Captcha expiration time in seconds.
-			CachePrefix:      "captcha_",   // Cache key prefix captcha characters.
+			URLPrefix:        settings.Captcha.URLPrefix,     // URL prefix of getting captcha pictures.
+			FieldIdName:      "captcha_id",                   // Hidden input element ID.
+			FieldCaptchaName: "captcha",                      // User input value element name in request form.
+			ChallengeNums:    settings.Captcha.ChallengeNums, // Challenge number.
+			Width:            settings.Captcha.Width,         // Captcha image width.
+			Height:           settings.Captcha.Height,        // Captcha image height.
+			Expiration:       settings.Captcha.Expiration,    // Captcha expiration time in seconds.
+			CachePrefix:      "captcha_",                     // Cache key prefix captcha characters.
 			Caches:           CaptchaCache,
 		}),
 		auth.Auth("/login", sess),
 		// xsrf.New(time.Minute),
-		xsrf.New(),
+		xsrf.New(xsrf.Option{
+			Cache:        XSRFCache,
+			RndGenerator: &utils.ShaGenerator{Type: settings.XSRF.RndGenerator},
+			Expiration:   settings.XSRF.Expiration,
+		}),
 		header.CustomHeaders(),
 	)
 
-	t.Get("/", new(home.HomeRouter))
-	t.Any("/login", new(login.LoginRouter))
-	t.Get("/logout", new(login.LogoutRouter))
-	t.Group("/editor", func(g *tango.Group) {
+	tgo.Get("/", new(home.HomeRouter))
+	tgo.Any("/login", new(login.LoginRouter))
+	tgo.Get("/logout", new(login.LogoutRouter))
+	tgo.Group("/editor", func(g *tango.Group) {
 		g.Get("/", new(editor.EditorHome))
 		g.Post("/preview", new(editor.PreviewRouter))
 	})
@@ -103,9 +117,9 @@ func main() {
 	}
 
 	if settings.TLS.Enable {
-		t.RunTLS(settings.TLS.Cert, settings.TLS.Key, settings.Server.Host)
+		tgo.RunTLS(settings.TLS.Cert, settings.TLS.Key, settings.Server.Host)
 	} else {
-		t.Run(settings.Server.Host)
+		tgo.Run(settings.Server.Host)
 	}
 
 }

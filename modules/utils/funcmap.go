@@ -17,12 +17,12 @@ var AssetTpl = map[string]string{
 
 func AssetLocal(typ, src string) template.HTML {
 
-	return template.HTML(fmt.Sprintf(AssetTpl[typ], path.Join(settings.Static.VirtualRoot, typ, src)))
+	return template.HTML(fmt.Sprintf(AssetTpl[typ], path.Join(settings.Static.URLPrefix, typ, src)))
 	// return path.Join(settings.Static.VirtualRoot, "js", src)
 }
 
 func AssetRemote(typ, src string) template.HTML {
-	return template.HTML(fmt.Sprintf(AssetTpl[typ], "https://"+path.Join(settings.Static.RemoteRoot, typ, src)))
+	return template.HTML(fmt.Sprintf(AssetTpl[typ], "https://"+path.Join(settings.Static.RemoteDomain, typ, src)))
 }
 
 func DefaultFuncs() template.FuncMap {
