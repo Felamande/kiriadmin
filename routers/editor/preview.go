@@ -69,3 +69,10 @@ func (r *EditorHome) Get() {
 	r.Tpl = "editor.html"
 	r.Render(r.Tpl, r.Data)
 }
+
+type EditorCommit struct {
+	binding.Binder
+	xsrf.Checker
+	auth.Auther
+	errs binding.Binder
+}
