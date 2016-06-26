@@ -7,54 +7,80 @@ import (
 	"github.com/tango-contrib/session"
 )
 
-const (
-	adminTokenKey = "adminToken"
-)
-
-type auther interface {
+type Auther interface {
 	AskAuth() bool
-	SetToken(string)
 	SetSession(*session.Session)
+	TokenKey() string
+
+	setToken(interface{})
 }
 
-type Auther struct {
-	token string
-	s     *session.Session
+type auther struct {
+	s *session.Session
 }
 
-func (a *Auther) Token() string {
+func (a *auther) SetSession(sess *session.Session) {
+	a.s = sess
+}
+
+//check implimentation
+var _ Auther = &AuthUser{}
+
+type AuthUser struct {
+	token interface{}
+	auther
+}
+
+func (a *AuthUser) Token() interface{} {
 	return a.token
 }
 
-func (a *Auther) Logout() {
-	a.s.Del(adminTokenKey)
+func (a *AuthUser) TokenKey() string {
+	return "UserTokenKey"
+}
+
+func (a *AuthUser) Logout() {
+	a.s.Del(a.TokenKey())
 	a.s.Release()
 }
 
-func (a *Auther) AskAuth() bool {
+func (a *AuthUser) AskAuth() bool {
 	return true
 }
 
-func (a *Auther) LoginWithToken(token string) {
-	a.SetToken(token)
-	a.s.Set(adminTokenKey, token)
+func (a *AuthUser) LoginWithToken(token interface{}) {
+	a.setToken(token)
+	a.s.Set(a.TokenKey(), token)
 }
 
-func (a *Auther) SetToken(token string) {
+func (a *AuthUser) setToken(token interface{}) {
 	a.token = token
 }
 
-func (a *Auther) SetSession(sess *session.Session) {
-	a.s = sess
+//check implimentation
+var _ Auther = &AuthAdmin{}
+
+type AuthAdmin struct {
+	AuthUser
+}
+
+func (a *AuthAdmin) TokenKey() string {
+	return "adminKey"
+}
+
+func (a *AuthAdmin) LoginWithToken(token interface{}) {
+	a.setToken(token)
+	a.s.Set(a.TokenKey(), token)
 }
 
 func Auth(redirct string, sessions *session.Sessions) tango.HandlerFunc {
 	return func(ctx *tango.Context) {
-		if auther, ok := ctx.Action().(auther); ok {
+
+		if auther, ok := ctx.Action().(Auther); ok {
 			s := sessions.Session(ctx.Req(), ctx.ResponseWriter)
 			auther.SetSession(s)
-			if adminToken := s.Get(adminTokenKey); adminToken != nil {
-				auther.SetToken(adminToken.(string))
+			if token := s.Get(auther.TokenKey()); token != nil {
+				auther.setToken(token)
 			} else {
 				if auther.AskAuth() {
 					ctx.Redirect(redirct)
