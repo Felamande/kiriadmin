@@ -17,7 +17,7 @@ import (
 	//middlewares
 	"github.com/Felamande/kiriadmin/middlewares/auth"
 	"github.com/Felamande/kiriadmin/middlewares/header"
-	timemw "github.com/Felamande/kiriadmin/middlewares/time"
+	"github.com/Felamande/kiriadmin/middlewares/timelog"
 	"github.com/Felamande/kiriadmin/middlewares/xsrf"
 	"github.com/tango-contrib/binding"
 	"github.com/tango-contrib/cache"
@@ -40,7 +40,7 @@ func init() {
 }
 
 func main() {
-	l := log.New(os.Stdout, settings.Log.Prefix, log.Llevel|log.LstdFlags)
+	l := log.New(os.Stdout, settings.Log.Prefix, log.Llevel|log.LstdFlags|log.Lshortfile|log.Lshortcolor)
 	l.SetLocation(settings.Location)
 	tgo := tango.NewWithLog(l)
 
@@ -61,7 +61,9 @@ func main() {
 	})
 
 	tgo.Use(
-		new(timemw.TimeHandler),
+		new(timelog.TimeHandler),
+
+		//tango classics
 		tango.Static(tango.StaticOptions{
 			RootPath: settings.Static.LocalRoot,
 			Prefix:   settings.Static.URLPrefix,
@@ -71,9 +73,9 @@ func main() {
 		tango.Return(),
 		tango.Param(),
 		tango.Contexts(),
-		binding.Bind(),
-		events.Events(),
 
+		//functional middlewares
+		binding.Bind(),
 		renders.New(renders.Options{
 			Reload:      settings.Template.Reload,
 			Directory:   settings.Template.Home,
@@ -93,14 +95,18 @@ func main() {
 			CachePrefix:      "captcha_",                     // Cache key prefix captcha characters.
 			Caches:           CaptchaCache,
 		}),
-		auth.Auth("/login", sess),
-		// xsrf.New(time.Minute),
+		header.CustomHeaders(),
+
+		//preparation before auth
+		events.Events(),
+
+		//authication and xsrf
 		xsrf.New(xsrf.Option{
 			Cache:        XSRFCache,
 			RndGenerator: &utils.ShaGenerator{Type: settings.XSRF.RndGenerator},
 			Expiration:   settings.XSRF.Expiration,
 		}),
-		header.CustomHeaders(),
+		auth.Auth("/login", sess),
 	)
 
 	tgo.Get("/", new(home.HomeRouter))
