@@ -17,17 +17,16 @@ import (
 type PreviewRouter struct {
 	binding.Binder
 	tango.Ctx
-	auth.Auther
+	auth.AuthAdmin
 	xsrf.Checker
 
 	JSON map[string]interface{}
 	errs binding.Errors
-	md   *models.Markdown
+	md   models.Markdown
 }
 
 func (r *PreviewRouter) Before() {
-	r.md = new(models.Markdown)
-	if errs := r.Json(r.md); errs.Len() != 0 {
+	if errs := r.Json(&r.md); errs.Len() != 0 {
 		r.errs = errs
 	}
 
@@ -38,6 +37,7 @@ func (r *PreviewRouter) Post() {
 	if r.errs.Len() != 0 {
 		r.JSON["err"] = r.errs[0].Error()
 		r.ServeJson(r.JSON)
+		r.Logger.Info(r.errs)
 		return
 	}
 	html := r.md.Convert()
@@ -53,13 +53,12 @@ func (r *PreviewRouter) DisposableToken() bool {
 }
 
 func (r *PreviewRouter) HandleXsrfErr(err error) {
-	r.Logger.Info(err)
 	r.errs.Add([]string{"xsrf"}, "xsrf", err.Error())
 }
 
 type EditorHome struct {
 	base.BaseTplRouter
-	auth.Auther
+	auth.AuthAdmin
 	xsrf.Checker
 }
 
@@ -70,9 +69,36 @@ func (r *EditorHome) Get() {
 	r.Render(r.Tpl, r.Data)
 }
 
-type EditorCommit struct {
+type CommitRouter struct {
 	binding.Binder
 	xsrf.Checker
-	auth.Auther
-	errs binding.Binder
+	auth.AuthAdmin
+	errs binding.Errors
+
+	article models.Article
 }
+
+func (r *CommitRouter) Before() {
+	r.errs = r.Json(&r.article)
+}
+
+func (r *CommitRouter) Post() {
+
+}
+
+const articleTmp = `title: {{.Title}}
+date: {{.Date}} +0800
+update: {{.Update}} +0800
+author: {{.Author}}
+{{if .Cover}}Cover: "{{.Cover}}"{{end}}
+{{if .Tags}}
+tags:
+    {{range _,$tag := .Tags}}
+	- {{$tag}}
+	{{end}}
+{{end}}
+{{if .Preview}}preview:{{.Preview}}{{end}}
+
+---
+{{.Content}}
+`

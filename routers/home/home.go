@@ -6,9 +6,11 @@ import (
 	"github.com/tango-contrib/renders"
 )
 
+var _ auth.Auther = &HomeRouter{}
+
 type HomeRouter struct {
 	base.BaseTplRouter
-	auth.Auther
+	auth.AuthAdmin
 }
 
 func (r *HomeRouter) Get() {

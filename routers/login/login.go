@@ -9,13 +9,15 @@ import (
 	// "github.com/tango-contrib/xsrf"
 )
 
+var _ auth.Auther = &LoginRouter{}
+
 type LoginRouter struct {
 	base.BaseTplRouter
 	captcha.Captcha
-	auth.Auther
-}
+	auth.AuthAdmin
 
-type J map[string]interface{}
+	JSON map[string]interface{}
+}
 
 func (r *LoginRouter) Get() {
 	if r.IsLogin() {
@@ -29,12 +31,15 @@ func (r *LoginRouter) Get() {
 }
 
 func (r *LoginRouter) Post() {
-
+	if r.JSON != nil {
+		r.JSON = make(map[string]interface{})
+	}
 	r.Req().ParseForm()
 
 	if !r.Verify() {
-		r.Logger.Error("invalid captcha")
-		r.ServeJson(J{"error": "invalid captcha", "sucess": false})
+		r.JSON["err"] = "invalid captcha"
+		r.ServeJson(r.JSON)
+		r.Logger.Error(r.JSON["err"])
 		return
 	}
 
@@ -42,13 +47,15 @@ func (r *LoginRouter) Post() {
 	pwd := r.Req().FormValue("pwd")
 	u := models.GetUserByName(name)
 	if u == nil {
-		r.Logger.Error("invalid user")
-		r.ServeJson(J{"error": "no such user", "sucess": false})
+		r.JSON["err"] = "no such user"
+		r.ServeJson(r.JSON)
+		r.Logger.Error(r.JSON["err"])
 		return
 	}
 	if !u.Auth(pwd) {
-		r.Logger.Error("invalid pwd")
-		r.ServeJson(J{"error": "invalid password", "sucess": false})
+		r.JSON["err"] = "invalid password"
+		r.ServeJson(r.JSON)
+		r.Logger.Error(r.JSON["err"])
 		return
 	}
 
@@ -58,7 +65,10 @@ func (r *LoginRouter) Post() {
 }
 
 func (r *LoginRouter) IsLogin() bool {
-	return "admin" == r.Token()
+	if r.Token() == nil {
+		return false
+	}
+	return "admin" == r.Token().(string)
 }
 
 func (r *LoginRouter) AskAuth() bool {
@@ -67,7 +77,7 @@ func (r *LoginRouter) AskAuth() bool {
 
 type LogoutRouter struct {
 	base.BaseRouter
-	auth.Auther
+	auth.AuthAdmin
 }
 
 func (r *LogoutRouter) Get() {
@@ -79,5 +89,5 @@ func (r *LogoutRouter) Get() {
 }
 
 func (r *LogoutRouter) IsLogin() bool {
-	return "admin" == r.Token()
+	return "admin" == r.Token().(string)
 }
