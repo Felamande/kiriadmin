@@ -5,14 +5,14 @@ import (
 )
 
 type Markdown struct {
-	Content string `json:"content"`
-	Xsrf    string `json:"_xsrf"`
+	Content string `json:"content"  binding:"Required"`
+	Xsrf    string `json:"_xsrf"  binding:"Required"`
 }
 type Article struct {
-	FileName string   `json:"file_name"`
-	Title    string   `json:"title"`
-	Mtime    string   `json:"mtime"`
-	Tags     []string `json:"tags"`
+	FileName string   `json:"file_name" binding:"Required"`
+	Title    string   `json:"title" binding:"Required"`
+	Mtime    string   `json:"mtime" binding:"Required"`
+	Tags     []string `json:"tags" binding:"Required"`
 	Markdown
 }
 
